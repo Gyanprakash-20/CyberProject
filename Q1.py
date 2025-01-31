@@ -76,3 +76,4 @@ if devices:
     save_to_csv(devices, 'scan_results.csv')
 else:
     print("No devices found.")
+    print("Testing git change Vesion 2")

@@ -79,3 +79,4 @@ for packet in packets:
 for ip, ports in connection_attempts.items():
     if len(ports) > PORT_SCAN_THRESHOLD:
         print(f"Potential Port Scan detected from {ip} targeting {len(ports)} ports")
+        print("NOting version2")
