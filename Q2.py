@@ -44,7 +44,7 @@ for filename in files_to_process:
         print(f"Image created successfully at '{output_file}'.")
     except subprocess.CalledProcessError as e:
         print(f"Error: Failed to process '{input_file}' with exit code {e.returncode}.")
-        print("Version 2")
+        print("Version3")
 
 
 
