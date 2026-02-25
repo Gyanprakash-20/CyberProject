@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NetSentinel — PCAP MDP Analyzer</title>
+  <meta name="description" content="Upload PCAP files to analyze network traffic and detect Malicious Device Probability (MDP) scores per IP address." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- Background grid -->
+  <div class="bg-grid"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">⬡</span>
+        <span class="logo-text">NetSentinel</span>
+      </div>
+      <div class="header-subtitle">PCAP · MDP Analysis Engine · v1.0</div>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="main">
+
+    <!-- Hero -->
+    <section class="hero">
+      <h1 class="hero-title">Malicious Device Probability Analyzer</h1>
+      <p class="hero-desc">Upload a <code>.pcap</code> capture file to detect network threats across 8 security rules and receive per-IP MDP scores.</p>
+    </section>
+
+    <!-- Upload card -->
+    <section class="upload-section">
+      <div class="upload-card" id="uploadCard">
+        <div class="drop-zone" id="dropZone">
+          <div class="drop-zone-inner">
+            <div class="drop-icon" id="dropIcon">
+              <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="26" cy="26" r="25" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/>
+                <path d="M26 34V20M26 20L20 26M26 20L32 26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M18 36h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <p class="drop-label">Drag &amp; drop your <strong>.pcap</strong> file here</p>
+            <p class="drop-sub">or</p>
+            <label class="browse-btn" for="fileInput" id="browseBtn">Browse File</label>
+            <input type="file" id="fileInput" accept=".pcap" hidden />
+          </div>
+        </div>
+
+        <div class="file-info" id="fileInfo" style="display:none;">
+          <div class="file-info-inner">
+            <span class="file-icon">📦</span>
+            <span class="file-name" id="fileName">—</span>
+            <span class="file-size" id="fileSize">—</span>
+            <button class="clear-btn" id="clearBtn" title="Remove file">✕</button>
+          </div>
+        </div>
+
+        <button class="analyze-btn" id="analyzeBtn" disabled>
+          <span class="analyze-label">Analyze PCAP</span>
+          <span class="analyze-arrow">→</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Loading state -->
+    <section class="loading-section" id="loadingSection" style="display:none;">
+      <div class="spinner-wrap">
+        <div class="spinner"></div>
+        <div class="loading-text">Analyzing packets<span class="dots"></span></div>
+        <div class="loading-sub">Running 8 security rules across all captured traffic</div>
+      </div>
+    </section>
+
+    <!-- Error state -->
+    <section class="error-section" id="errorSection" style="display:none;">
+      <div class="error-card">
+        <span class="error-icon">⚠</span>
+        <div>
+          <div class="error-title">Analysis Failed</div>
+          <div class="error-msg" id="errorMsg">—</div>
+        </div>
+        <button class="retry-btn" id="retryBtn">Try Again</button>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section class="results-section" id="resultsSection" style="display:none;">
+
+      <!-- Summary cards -->
+      <div class="summary-cards" id="summaryCards">
+        <div class="s-card">
+          <div class="s-label">Total IPs</div>
+          <div class="s-value" id="totalIPs">—</div>
+        </div>
+        <div class="s-card s-card--warning">
+          <div class="s-label">High Risk (MDP ≥ 50%)</div>
+          <div class="s-value" id="highRiskIPs">—</div>
+        </div>
+        <div class="s-card s-card--danger">
+          <div class="s-label">Critical (MDP ≥ 75%)</div>
+          <div class="s-value" id="criticalIPs">—</div>
+        </div>
+        <div class="s-card">
+          <div class="s-label">Average MDP</div>
+          <div class="s-value" id="avgMDP">—</div>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h2 class="chart-title">MDP Score Distribution</h2>
+          <span class="chart-legend">
+            <span class="legend-dot legend-safe"></span>Safe
+            <span class="legend-dot legend-warn"></span>Warning
+            <span class="legend-dot legend-danger"></span>Critical
+          </span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="mdpChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-card">
+        <div class="table-header">
+          <h2 class="table-title">IP Analysis Results</h2>
+          <div class="table-controls">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search IP..." />
+            <div class="rule-legend">
+              <span class="rl-safe">● Pass</span>
+              <span class="rl-danger">● Fail</span>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="resultsTable">
+            <thead>
+              <tr>
+                <th>IP Address</th>
+                <th>MAC Address</th>
+                <th title="Non-standard TCP ports">R1</th>
+                <th title="DDoS / High traffic">R2</th>
+                <th title="Oversized packets">R3</th>
+                <th title="Unsolicited ARP">R4</th>
+                <th title="Large DNS responses">R5</th>
+                <th title="Excessive ICMP">R6</th>
+                <th title="TCP SYN Flood">R7</th>
+                <th title="Port Scan">R8</th>
+                <th>MDP Score</th>
+              </tr>
+            </thead>
+            <tbody id="resultsBody">
+            </tbody>
+          </table>
+        </div>
+        <div class="table-footer">
+          <span id="rowCount">— results</span>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>NetSentinel · MDP Analysis Engine · Powered by Scapy</p>
+    <p class="footer-rules">
+      R1: Non-Standard Ports &nbsp;|&nbsp; R2: DDoS/High Traffic &nbsp;|&nbsp;
+      R3: Oversized Packets &nbsp;|&nbsp; R4: Unsolicited ARP &nbsp;|&nbsp;
+      R5: Large DNS &nbsp;|&nbsp; R6: Excessive ICMP &nbsp;|&nbsp;
+      R7: SYN Flood &nbsp;|&nbsp; R8: Port Scan
+    </p>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
